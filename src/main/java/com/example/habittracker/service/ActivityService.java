@@ -9,88 +9,76 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class ActivityService {
 
-    private final ActivityRepository activityRepository;
-    private final UserRepository userRepository;
+    private final ActivityRepository actRepo;
+    private final UserRepository usrRepo;
 
-    public ActivityService(ActivityRepository activityRepository, UserRepository userRepository) {
-        this.activityRepository = activityRepository;
-        this.userRepository = userRepository;
+    public ActivityService(ActivityRepository actRepo, UserRepository usrRepo) {
+        this.actRepo = actRepo;
+        this.usrRepo = usrRepo;
     }
 
     // ✅ Add Activity
-//    public Map<String, Object> addActivity(String username, Activity activity) {
-//        User user = userRepository.findByUsername(username)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//
-//        activity.setUser(user);
-//        Activity savedActivity = activityRepository.save(activity);
-//
-//        return formatActivityResponse(savedActivity);
-//    }
-
-    public Map<String, Object> addActivity(String username, Activity activity) {
-        User user = userRepository.findByUsername(username)
+    public Map<String, Object> createActivity(String usrName, Activity act) {
+        User foundUser = usrRepo.findByUsername(usrName)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        activity.setUser(user); // ✅ Assign user to activity
-        Activity savedActivity = activityRepository.save(activity);
+        act.setUser(foundUser); // ✅ Assign user to activity
+        Activity savedAct = actRepo.save(act);
 
-        return formatActivityResponse(savedActivity);
+        return formatActivityData(savedAct);
     }
 
-
     // ✅ Get Activities by User
-    public List<Map<String, Object>> getActivitiesByUser(String username) {
-        User user = userRepository.findByUsername(username)
+    public List<Map<String, Object>> fetchActivitiesByUser(String usrName) {
+        User foundUser = usrRepo.findByUsername(usrName)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Activity> activities = activityRepository.findByUser(user);
+        List<Activity> actList = actRepo.findByUser(foundUser);
 
-        return activities.stream().map(this::formatActivityResponse).toList();
+        return actList.stream().map(this::formatActivityData).toList();
     }
 
     // ✅ Update Activity
-    public Map<String, Object> updateActivity(Long activityId, Activity updatedActivity) {
-        Activity existingActivity = activityRepository.findById(activityId)
+    public Map<String, Object> modifyActivity(Long actId, Activity newAct) {
+        Activity existingAct = actRepo.findById(actId)
                 .orElseThrow(() -> new RuntimeException("Activity not found"));
 
-        existingActivity.setActivityName(updatedActivity.getActivityName());
-        existingActivity.setActivityType(updatedActivity.getActivityType());
-        existingActivity.setStartTime(updatedActivity.getStartTime());
-        existingActivity.setEndTime(updatedActivity.getEndTime());
+        existingAct.setActivityName(newAct.getActivityName());
+        existingAct.setActivityType(newAct.getActivityType());
+        existingAct.setStartTime(newAct.getStartTime());
+        existingAct.setEndTime(newAct.getEndTime());
 
-        Activity savedActivity = activityRepository.save(existingActivity);
-        return formatActivityResponse(savedActivity);
+        Activity savedAct = actRepo.save(existingAct);
+        return formatActivityData(savedAct);
     }
 
     // ✅ Delete Activity
-    public String deleteActivity(Long activityId) {
-        Activity activity = activityRepository.findById(activityId)
+    public String removeActivity(Long actId) {
+        Activity actToDelete = actRepo.findById(actId)
                 .orElseThrow(() -> new RuntimeException("Activity not found"));
 
-        activityRepository.delete(activity);
+        actRepo.delete(actToDelete);
         return "Activity deleted successfully!";
     }
 
     // ✅ Format Response
-    private Map<String, Object> formatActivityResponse(Activity activity) {
+    private Map<String, Object> formatActivityData(Activity act) {
         Map<String, Object> response = new HashMap<>();
-        response.put("id", activity.getId());
-        response.put("activityName", activity.getActivityName());
-        response.put("activityType", activity.getActivityType());
-        response.put("startTime", activity.getStartTime());
-        response.put("endTime", activity.getEndTime());
+        response.put("id", act.getId());
+        response.put("activityName", act.getActivityName());
+        response.put("activityType", act.getActivityType());
+        response.put("startTime", act.getStartTime());
+        response.put("endTime", act.getEndTime());
 
-        Map<String, String> userResponse = new HashMap<>();
-        userResponse.put("id", activity.getUser().getId().toString());
-        userResponse.put("username", activity.getUser().getUsername());
+        Map<String, String> userData = new HashMap<>();
+        userData.put("id", act.getUser().getId().toString());
+        userData.put("username", act.getUser().getUsername());
 
-        response.put("user", userResponse);
+        response.put("user", userData);
         return response;
     }
 }
